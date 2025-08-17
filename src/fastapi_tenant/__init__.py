@@ -1,3 +1,4 @@
+from .alembic import run_shared_migrations, run_tenant_migrations
 from .cli import app as cli
 from .db import tenant_session_dependency as tenant_dep
 from .middleware import TenantMiddlewareChain
@@ -14,4 +15,6 @@ __all__ = [
     "PathResolver",
     "tenant_dep",
     "cli",
+    "run_tenant_migrations",
+    "run_shared_migrations",
 ]
