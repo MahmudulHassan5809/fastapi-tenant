@@ -1,15 +1,44 @@
-import os
 from alembic import context
-from sqlalchemy import create_engine, pool, text
+from sqlalchemy import engine_from_config, pool, create_engine, text
 from logging.config import fileConfig
+import os
+
 
 
 config = context.config
 fileConfig(config.config_file_name)
 
-config.set_main_option("sqlalchemy.url", os.environ["DATABASE_URL"])
 
-def run_migrations_for_schema(schema: str, db_url: str):
+
+def run_shared_migrations():
+    config.set_main_option("sqlalchemy.url", os.environ["DATABASE_URL"])
+    connectable = engine_from_config(
+        config.get_section(config.config_ini_section),
+        prefix="sqlalchemy.",
+        poolclass=pool.NullPool,
+    )
+    schema_translate_map = {None: "public"}
+
+    with connectable.connect() as connection:
+        context.configure(
+            connection=connection,
+            version_table_schema="public",
+            include_schemas=True,
+            render_as_batch=True,
+            compare_type=True,
+            compare_server_default=True,
+            dialect_opts={"paramstyle": "named"},
+            schema_translate_map=schema_translate_map
+        )
+        with context.begin_transaction():
+            context.run_migrations()
+
+
+
+
+def run_schema_migrations():
+    schema = os.environ["TENANT_SCHEMA"]
+    db_url = os.environ["DATABASE_URL"]
     connectable = create_engine(db_url, poolclass=pool.NullPool, echo=True)
     schema_translate_map = {None: schema}
 
@@ -32,11 +61,3 @@ def run_migrations_for_schema(schema: str, db_url: str):
         with context.begin_transaction():
             context.run_migrations()
 
-if context.is_offline_mode():
-    raise NotImplementedError("Offline mode not supported for tenants")
-else:
-    schema = os.environ["TENANT_SCHEMA"]
-    db_url = os.environ["DATABASE_URL"]
-    if not schema:
-        raise Exception("TENANT_SCHEMA not set")
-    run_migrations_for_schema(schema, db_url)
