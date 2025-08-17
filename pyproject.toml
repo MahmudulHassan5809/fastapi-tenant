@@ -8,6 +8,7 @@ dependencies = [
     "pydantic-settings>=2.10.1",
     "sqlalchemy>=2.0.43",
     "starlette>=0.47.2",
+    "typer>=0.16.0",
 ]
 
 [dependency-groups]
