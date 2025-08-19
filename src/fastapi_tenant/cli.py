@@ -29,21 +29,23 @@ def create_tenant(schema: str):
 
 
 @app.command()
-def revision_shared(message: str = typer.Option(..., "-m", "--message")):
-    subprocess.run(["alembic", "revision", "-m", message], check=True, cwd="migrations-org")
-    typer.echo("Revision created in migrations-org")
+def revision_shared(message: str):
+    cmd = ["revision", "--autogenerate", "-m", message]
+    run_alembic(cmd, env={"TENANT_SCHEMA": "shared"}, cwd="migrations-org")
+    typer.echo("Revision created in migrations-tenant")
 
 
 @app.command()
-def revision(message: str = typer.Option(..., "-m", "--message")):
-    subprocess.run(["alembic", "revision", "-m", message], check=True, cwd="migrations-tenant")
+def revision(message: str, schema: str):
+    cmd = ["revision", "--autogenerate", "-m", message]
+    run_alembic(cmd, env={"TENANT_SCHEMA": schema}, cwd="migrations-tenant")
     typer.echo("Revision created in migrations-tenant")
 
 
 @app.command()
 def upgrade_shared():
-    typer.echo("Upgrading shared schema")
-    run_alembic(["upgrade", "head"], cwd="migrations-org")
+    typer.echo("Upgrading tenant: shared")
+    run_alembic(["upgrade", "head"], env={"TENANT_SCHEMA": "shared"}, cwd="migrations-org")
 
 
 @app.command()
@@ -54,29 +56,26 @@ def upgrade(schema: str):
 
 @app.command()
 def downgrade_shared(
-    target: str = typer.Option("base", help="Target revision (base, -1, or revision ID)"),
+    target: str,
 ):
-    typer.echo(f"Downgrading shared schema to: {target}")
+    typer.echo(f"Downgrading tenant 'shared' to: {target}")
 
-    # Confirm if downgrading to base (removes all migrations)
     if target == "base":
-        confirm = typer.confirm("This will remove ALL migrations from shared schema. Continue?")
+        confirm = typer.confirm("This will remove ALL migrations from tenant 'shared'. Continue?")
         if not confirm:
             typer.echo("Downgrade cancelled")
             raise typer.Exit(0)
 
-    run_alembic(["downgrade", target], cwd="migrations-org")
-    typer.echo(f"Shared schema downgraded to: {target}")
+    run_alembic(["downgrade", target], env={"TENANT_SCHEMA": "shared"}, cwd="migrations-org")
+    typer.echo(f"Tenant 'shared' downgraded to: {target}")
 
 
 @app.command()
 def downgrade(
     schema: str,
-    target: str = typer.Option("base", help="Target revision (base, -1, or revision ID)"),
+    target: str,
 ):
     typer.echo(f"Downgrading tenant '{schema}' to: {target}")
-
-    # Confirm if downgrading to base (removes all migrations)
     if target == "base":
         confirm = typer.confirm(
             f"This will remove ALL migrations from tenant '{schema}'. Continue?"
@@ -91,8 +90,8 @@ def downgrade(
 
 @app.command()
 def history_shared():
-    typer.echo("Shared schema migration history:")
-    run_alembic(["history"], cwd="migrations-org")
+    typer.echo("Migration history for tenant 'shared':")
+    run_alembic(["history"], env={"TENANT_SCHEMA": "shared"}, cwd="migrations-org")
 
 
 @app.command()
@@ -103,8 +102,8 @@ def history(schema: str):
 
 @app.command()
 def current_shared():
-    typer.echo("Current shared schema revision:")
-    run_alembic(["current"], cwd="migrations-org")
+    typer.echo("Current revision for tenant 'shared':")
+    run_alembic(["current"], env={"TENANT_SCHEMA": "shared"}, cwd="migrations-org")
 
 
 @app.command()
@@ -124,7 +123,7 @@ def reset_db():
         conn.execution_options(isolation_level="AUTOCOMMIT")
         conn.execute(text(f"DROP DATABASE IF EXISTS {db_name}"))
         conn.execute(text(f"CREATE DATABASE {db_name}"))
-    typer.echo(f"✅ Reset database '{db_name}'")
+    typer.echo(f"Reset database '{db_name}'")
 
 
 @app.command()
@@ -133,23 +132,17 @@ def reset_migrations():
         if os.path.exists(folder):
             shutil.rmtree(folder)
         os.makedirs(folder)
-    typer.echo("🧹 Cleared migration versions")
+    typer.echo("Cleared migration versions")
 
 
 @app.command()
 def clean_schema(schema: str):
-    """Truncate all tables in a specific schema.
-
-    Usage:
-        python cli.py clean-schema <schema_name>
-    """
     db_url = os.environ["DATABASE_URL"]
     url = make_url(db_url)
     engine = create_engine(url)
 
     with engine.connect() as conn:
         conn.execution_options(isolation_level="AUTOCOMMIT")
-        # Fetch all table names in the schema
         result = conn.execute(
             text(
                 """
@@ -167,11 +160,10 @@ def clean_schema(schema: str):
             typer.echo(f"⚠️  No tables found in schema '{schema}'")
             return
 
-        # Truncate all tables with CASCADE
         for table in tables:
             conn.execute(text(f'TRUNCATE TABLE "{schema}"."{table}" CASCADE;'))
 
-    typer.echo(f"✅ All tables in schema '{schema}' have been truncated")
+    typer.echo(f"All tables in schema '{schema}' have been truncated")
 
 
 if __name__ == "__main__":

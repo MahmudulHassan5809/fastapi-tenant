@@ -3,10 +3,12 @@ from contextlib import asynccontextmanager
 
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import declarative_base, sessionmaker
 
 from .settings import settings
 from .tenant_context import Tenants
+
+Base = declarative_base()
 
 engine = create_async_engine(
     settings.DATABASE_URL,

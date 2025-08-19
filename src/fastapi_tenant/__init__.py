@@ -1,4 +1,5 @@
 from .cli import app as cli
+from .db import Base
 from .db import tenant_session_dependency as tenant_dep
 from .middleware import TenantMiddlewareChain
 from .resolvers import BaseResolver, PathResolver, SubdomainResolver
@@ -16,4 +17,5 @@ __all__ = [
     "cli",
     "run_tenant_migrations",
     "run_shared_migrations",
+    "Base",
 ]
