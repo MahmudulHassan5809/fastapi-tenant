@@ -14,6 +14,11 @@ if not TENANT_SCHEMA:
     raise RuntimeError("Missing required environment variable: TENANT_SCHEMA")
 
 
+branch_label = os.environ.get("ALEMBIC_BRANCH")
+if not branch_label:
+    raise RuntimeError("Missing required environment variable: ALEMBIC_BRANCH")
+
+
 config = context.config
 config.set_main_option("sqlalchemy.url", DATABASE_URL)
 
