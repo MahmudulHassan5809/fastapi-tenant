@@ -2,7 +2,7 @@ from .cli import app as cli
 from .db import Base
 from .db import tenant_session_dependency as tenant_dep
 from .middleware import TenantMiddlewareChain
-from .resolvers import BaseResolver, PathResolver, SubdomainResolver
+from .resolvers import BaseResolver, HeaderResolver, PathResolver, SubdomainResolver
 from .settings import settings
 from .tenant_context import Tenants
 
@@ -11,6 +11,7 @@ __all__ = [
     "Tenants",
     "TenantMiddlewareChain",
     "BaseResolver",
+    "HeaderResolver",
     "SubdomainResolver",
     "PathResolver",
     "tenant_dep",

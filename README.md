@@ -24,7 +24,7 @@ Provides:
 ## 🔹 Installation
 
 ```bash
-pip install fastapi_tenant
+pip install -i https://test.pypi.org/simple/ fastapi-tenant
 pip install fastapi sqlalchemy alembic
 ```
 
